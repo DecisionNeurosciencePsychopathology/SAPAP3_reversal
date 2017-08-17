@@ -24,19 +24,23 @@ library(lattice)
 
 
 # read in the data
-setwd("~/code/SAPAP3_reversal/")
-d <- read_excel("~/code/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
+setwd("/Users/manninge/Documents/GitHub/SAPAP3_reversal/")
+d <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
+#setwd("~/code/SAPAP3_reversal/")
+# d <- read_excel("~/code/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
 #View(d)
 
 
 # read in genotype
-g <- read_excel("~/code/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
+g <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
+#g <- read_excel("~/code/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
 g$id <- g$`Physical Tag`
 g <- g[,2:3]
 
 
 # read in cfos cell counts
-cfos <- read_csv("~/code/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
+cfos <- read_csv("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
+#cfos <- read_csv("~/code/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
 names(cfos)[names(cfos)=="ID"] <- "id"
 names(cfos)[names(cfos)=="correct"] <- "tot_correct"
 names(cfos)[names(cfos)=="incorrrect"] <- "tot_incorrect"
@@ -60,6 +64,47 @@ corrplot(feedROIcor, cl.lim=c(0,1),
 dev.off()
 
 cfos.pca = prcomp((just_rois),scale = TRUE, center = TRUE)
+
+# PCA for Dorsal striatum
+DS_rois <- cfos[,13:15]
+DS_cfos.pca = prcomp((DS_rois),scale = TRUE, center = TRUE)
+DS_cfos_pcas <- get_pca_ind(DS_cfos.pca)
+cfos$val1 <- DS_cfos_pcas$coord[,1]
+summary(DS_cfos.pca)
+plot(DS_cfos.pca,type = 'l')
+
+# PCA for Ventral striatum
+VS_rois <- cfos[,16:18]
+VS_cfos.pca = prcomp((VS_rois),scale = TRUE, center = TRUE)
+VS_cfos_pcas <- get_pca_ind(VS_cfos.pca)
+cfos$val2 <- VS_cfos_pcas$coord[,1]
+
+# PCA for Nucleus accumbens
+NAc_rois <- cfos[,17:18]
+NAc_cfos.pca = prcomp((NAc_rois),scale = TRUE, center = TRUE)
+NAc_cfos_pcas <- get_pca_ind(NAc_cfos.pca)
+cfos$val3 <- NAc_cfos_pcas$coord[,1]
+
+# PCA for mPFC
+mPFC_rois <- cfos[,c(7,11)]
+mPFC_cfos.pca = prcomp((mPFC_rois),scale = TRUE, center = TRUE)
+mPFC_cfos_pcas <- get_pca_ind(mPFC_cfos.pca)
+cfos$valm6 <- mPFC_cfos_pcas$coord[,1]
+
+# PCA for OFC
+OFC_rois <- cfos[,c(7:8)]
+OFC_cfos.pca = prcomp((OFC_rois),scale = TRUE, center = TRUE)
+OFC_cfos_pcas <- get_pca_ind(OFC_cfos.pca)
+cfos$val5 <- OFC_cfos_pcas$coord[,1]
+
+#Re-merge cell counts with other data
+
+# run PCA (code from Alex 081717)
+#ds.pca = prcomp((just_rois),scale = TRUE, center = TRUE)
+# and write component scores
+#ds_pcas <- get_pca_ind(ds.pca)
+#cfos$val1 <- cfos_pcas$coord[,1]
+
 
 # run PCA and write component scores
 cfos_pcas <- get_pca_ind(cfos.pca)
@@ -263,6 +308,8 @@ plot(ls.respg1, type ~ response, horiz=F,ylab = "Response levels", xlab = "type"
 summary(mrespg2 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + grooming.time*t.num*type +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg2)
 
+
+#DLS (alone) model
 summary(mrespg3 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + DLS*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg3)
 
@@ -276,6 +323,7 @@ plot(ls.respg3, type ~ response, horiz=F,ylab = "Response levels", xlab = "time,
 ls.respg3a <- lsmeans(mrespg3,"type", by = "DLS", at = list(DLS = c(10,100,200)))
 plot(ls.respg3a, type ~ response, horiz=F,ylab = "Response levels", xlab = "Response type")
 
+
 # stronger extinction in WT as a Fx(DLS) than in KO
 lsmip(mrespg3, DLS ~ t.num | Genotype, at = list(DLS = c(10,100,200),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 
@@ -288,7 +336,58 @@ lsmip(mrespg4, NAccS ~ type | Genotype , at = list(NAccS = c(50,150,300)), ylab 
 
 # anova(mrespg3,mrespg4, test = "Rao")
 
+# looking at PFC ROIS
+
+#lOFC: no interactions found
 summary(mrespg5 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + lOFC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+
+#PrL influences response rate in KO mice, not WT mice. Low PrL actiivty associated with more perseverative behaviour, high PrL associated with better extinction
+#IL-NAcS typically mediates extinction
+summary(mrespg6 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + PrL*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+lsmip(mrespg6, PrL ~ t.num | Genotype , at = list(PrL = c(200,400,600),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+
+#IL: no interaction found
+summary(mrespg7 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + IL*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+
+#mOFC: Trend for genotype * mOFC * response time or type interactions: pattern (response time) looks like NAcS
+summary(mrespg8 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + mOFC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+lsmip(mrespg8, mOFC ~ t.num | Genotype , at = list(mOFC = c(400,700,1000),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+
+#M2: no interaction found
+summary(mrespg9 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + M2*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+
+#averaged region analyses
+#Dorsal striatum (DLS/DMS/CMS): similar to DLS
+summary(mrespg11 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val1*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+lsmip(mrespg11, val1 ~ t.num | Genotype , at = list(val1 = c(-2,0,2),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+
+#Ventral striatum (NAcC/NAcS/VMS): Not similar to NAcS
+summary(mrespg12 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val2*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+
+#Nucleus accumbens (NAcC/NAcS): Similar to NAcS
+summary(mrespg13 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val3*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+lsmip(mrespg13, val3 ~ t.num | Genotype , at = list(val3 = c(-1.5,0,1.5),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+
+#mPFC (mOFC/PrL): Similar to NAcS (not similar to PrL if IL or IL/lOFC are added to PrL)
+summary(mrespg16 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + valm6*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+lsmip(mrespg16, valm6 ~ t.num | Genotype , at = list(valm6 = c(-2,0,2),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+
+#oFC (mOFC/lOFC): trend genotype x cfos interaction (no interaction with behaviour)
+summary(mrespg15 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val5*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+
+
+hist(just_rois$PrL)
+hist(just_rois$NAccS)
+hist(cfos$mOFC)
+hist(bdfc$t.num)
+sd(cfos$val1)
+median(cfos$val1)
+mean(cfos$val1)
+mean(cfos$val3)
+
+summary(mrespg10 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + VMS*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+
+
 car::Anova(mrespg5)
 
 
