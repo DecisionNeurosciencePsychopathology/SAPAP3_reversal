@@ -340,6 +340,7 @@ lsmip(mrespg4, NAccS ~ type | Genotype , at = list(NAccS = c(50,150,300)), ylab 
 
 #lOFC: no interactions found
 summary(mrespg5 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + lOFC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+car::Anova(mrespg5)
 
 #PrL influences response rate in KO mice, not WT mice. Low PrL actiivty associated with more perseverative behaviour, high PrL associated with better extinction
 #IL-NAcS typically mediates extinction
@@ -352,6 +353,11 @@ summary(mrespg7 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + I
 #mOFC: Trend for genotype * mOFC * response time or type interactions: pattern (response time) looks like NAcS
 summary(mrespg8 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + mOFC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 lsmip(mrespg8, mOFC ~ t.num | Genotype , at = list(mOFC = c(400,700,1000),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg8, mOFC ~ type | Genotype , at = list(mOFC = c(400,700,1000), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
+lsmip(mrespg8, mOFC ~ type | Genotype , at = list(mOFC = c(400,700,1000)), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
+lsmip(mrespg8, mOFC ~ Genotype , at = list(mOFC = c(400,700,1000)), ylab = "log(response rate)", xlab = "Genotype", type = "predicted" )
+      
+
 
 #M2: no interaction found
 summary(mrespg9 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + M2*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
@@ -360,6 +366,15 @@ summary(mrespg9 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + M
 #Dorsal striatum (DLS/DMS/CMS): similar to DLS
 summary(mrespg11 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val1*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 lsmip(mrespg11, val1 ~ t.num | Genotype , at = list(val1 = c(-2,0,2),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg11, val1 ~ t.num | type , at = list(val1 = c(-2,0,2),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+
+#better reversal with DS Cfos
+ls.respg11a <- lsmeans(mrespg11,"type", by = "val1", at = list(val1 = c(-2,0,2)),t.num = c(1000, 9000, 18000))
+plot(ls.respg11a, type ~ response, horiz=F,ylab = "Response levels", xlab = "Response type")
+plot(ls.respg11a, type ~ response | t.num , horiz=F,ylab = "Response levels", xlab = "Response type")
+
+ls.respg11b <- lsmeans(mrespg11,"Genotype", by = "val1", at = list(val1 = c(-2,0,2)))
+plot(ls.respg11b, type ~ response , horiz=F,ylab = "Response levels", xlab = "Genotype")
 
 #Ventral striatum (NAcC/NAcS/VMS): Not similar to NAcS
 summary(mrespg12 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val2*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
@@ -368,15 +383,17 @@ summary(mrespg12 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + 
 summary(mrespg13 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val3*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 lsmip(mrespg13, val3 ~ t.num | Genotype , at = list(val3 = c(-1.5,0,1.5),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 
+
 #mPFC (mOFC/PrL): Similar to NAcS (not similar to PrL if IL or IL/lOFC are added to PrL)
 summary(mrespg16 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + valm6*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 lsmip(mrespg16, valm6 ~ t.num | Genotype , at = list(valm6 = c(-2,0,2),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg16, valm6 ~ type | Genotype , at = list(valm6 = c(-2,0,2)), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
 
 #oFC (mOFC/lOFC): trend genotype x cfos interaction (no interaction with behaviour)
 summary(mrespg15 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val5*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 
-
-hist(just_rois$PrL)
+#stuff for deciding how to graph interactions
+hist(just_rois$M1)
 hist(just_rois$NAccS)
 hist(cfos$mOFC)
 hist(bdfc$t.num)
@@ -385,10 +402,10 @@ median(cfos$val1)
 mean(cfos$val1)
 mean(cfos$val3)
 
-summary(mrespg10 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + VMS*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+#checking regions quickly
+summary(mrespg10 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + M1*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+lsmip(mrespg10, M1 ~ type | Genotype , at = list(M1 = c(10,60,110)), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
 
-
-car::Anova(mrespg5)
 
 
 
