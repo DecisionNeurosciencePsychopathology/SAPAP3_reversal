@@ -371,6 +371,9 @@ hist(cfos$lOFC)
 
 #PrL influences response rate in KO mice, not WT mice. Low PrL actiivty associated with more perseverative behaviour, high PrL associated with better extinction
 #IL-NAcS typically mediates extinction
+lm_PrL <- lm(response ~ PrL*t.num*type*Genotype, data=bdfc); summary(lm_PrL)
+lm <- lm(response ~t.num*type*Genotype, data=bdfc); summary(lm)
+anova(lm_PrL, lm)
 summary(mrespg6 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + PrL*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 lsmip(mrespg6, PrL ~ t.num | Genotype , at = list(PrL = c(200,400,600),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg6, PrL ~ type | Genotype , at = list(PrL = c(200,400,600)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
