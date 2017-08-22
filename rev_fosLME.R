@@ -21,8 +21,8 @@ library(readxl)
 library(linbin)
 library(MASS)
 library(lattice)
-
-
+library(fastICA)
+library(plotly)
 # read in the data
 setwd("/Users/manninge/Documents/GitHub/SAPAP3_reversal/")
 d <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
@@ -120,7 +120,7 @@ cfos$valm8 <- PFC_cfos_pcas$coord[,1]
 
 # run PCA and write component scores
 cfos_pcas <- get_pca_ind(cfos.pca)
-# hdf$val1 <- cfos_pcas$coord[,1]
+bdfc$val1 <- cfos_pcas$coord[,1]
 # hdf$val2 <- cfos_pcas$coord[,2]
 # hdf$val3 <- cfos_pcas$coord[,3]
 # hdf$val4 <- cfos_pcas$coord[,4]
@@ -130,6 +130,19 @@ summary(cfos.pca)
 
 # check the variance explained by various factors
 plot(cfos.pca,type = 'l')
+
+
+## Quick attempt at ICA -- probably over-analyzing these data
+# a <- fastICA(just_rois, 5,  alg.typ = "parallel", fun = "logcosh", alpha = 1,
+#              method = "C", row.norm = FALSE, maxit = 200,
+#              tol = 0.0001, verbose = TRUE)
+# par(mfrow = c(1, 3))
+# plot(a$X, main = "Pre-processed data")
+# plot(a$X %*% a$K, main = "PCA components")
+# plot(a$S, main = "ICA components")
+# icaloads <- as.data.frame(a$A)
+# names(icaloads) <- names(just_rois)
+# heatmap(a$A, labCol = names(just_rois))
 
 cfos$genotype01 <- as.factor(cfos$genotype01)
 
@@ -358,6 +371,10 @@ lsmip(mrespg4c, NAccC ~ Genotype , at = list(NAccC = c(50,150,300)), ylab = "log
 lsmip(mrespg4c, NAccC ~ t.num | Genotype , at = list(NAccC = c(50,150,300),t.num = c(1000, 9000, 18000)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg4c, NAccC ~ type | Genotype , at = list(NAccC = c(50,150,300)), ylab = "log(response rate)", xlab = "response type ", type = "predicted" )
 hist(cfos$NAccC)
+
+summary(mrespg4a <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + NAccC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+car::Anova(mrespg4a)
+
 
 # anova(mrespg3,mrespg4, test = "Rao")
 
