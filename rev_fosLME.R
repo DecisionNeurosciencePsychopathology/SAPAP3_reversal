@@ -397,10 +397,12 @@ hist(cfos$NAccC)
 # looking at PFC ROIS
 
 #lOFC: no interactions found
-#LM 082717: using "DLS-style" model showed lOFC*genoytpe*type interaction
+#LM 082717: using "DLS-style" (see 5a) model showed lOFC*genoytpe*type interaction
 summary(mrespg5 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + lOFC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
-lsmip(mrespg10, lOFC ~ type | Genotype , at = list(lOFC = c(400,800,1200)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
+lsmip(mrespg5, lOFC ~ type | Genotype , at = list(lOFC = c(400,800,1200)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
 car::Anova(mrespg5)
+summary(mrespg5a <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + lOFC*t.num*Genotype + lOFC*type*Genotype + lOFC*type*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+car::Anova(mrespg5a)
 hist(cfos$lOFC)
 
 #PrL influences response rate in KO mice, not WT mice. Low PrL actiivty associated with more perseverative behaviour, high PrL associated with better extinction
@@ -411,9 +413,12 @@ lm_PrL <- lm(response ~ PrL*t.num*type*Genotype, data=bdfc); summary(lm_PrL)
 lm <- lm(response ~t.num*type*Genotype, data=bdfc); summary(lm)
 anova(lm_PrL, lm)
 
-#LM 082717 again, using DLS-style model find  type x gene x PrL and type x time X PrL interactions
+#LM 082717 again, using DLS-style model (6a) find  type x gene x PrL and type x time X PrL interactions
 summary(mrespg6 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + PrL*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg6)
+
+summary(mrespg6a <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + PrL*t.num*Genotype + PrL*type*Genotype + PrL*type*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+car::Anova(mrespg6a)
 
 # AD: careful, this is qualified by higher-order interactions including type
 #lsmip(mrespg6, PrL ~ t.num | Genotype , at = list(PrL = c(200,400,600),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
@@ -423,9 +428,12 @@ lsmip(mrespg6, PrL ~ type | Genotype , at = list(PrL = c(200,400,600)), ylab = "
 summary(mrespg7 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + IL*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 
 #mOFC: Trend for genotype * mOFC * response time or type interactions: pattern (response time) looks like NAcS
-# LM 082717: again using similar model structure to DLS I found gene x type x mOFC interaction
+# LM 082717: again using similar model structure to DLS (8a) I found gene x type x mOFC interaction
 summary(mrespg8 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + mOFC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg8)
+
+summary(mrespg8a <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + mOFC*t.num*Genotype + mOFC*type*Genotype + mOFC*type*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+car::Anova(mrespg8a)
 # AD: careful, this is a NS interaction
 # lsmip(mrespg8, mOFC ~ t.num | Genotype , at = list(mOFC = c(400,700,1000),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg8, mOFC ~ type | Genotype , at = list(mOFC = c(400,700,1000)), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
