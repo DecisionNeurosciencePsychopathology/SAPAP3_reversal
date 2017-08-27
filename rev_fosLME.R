@@ -24,23 +24,23 @@ library(lattice)
 library(fastICA)
 library(plotly)
 # read in the data
-# setwd("/Users/manninge/Documents/GitHub/SAPAP3_reversal/")
-# d <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
-setwd("~/code/SAPAP3_reversal/")
-d <- read_excel("~/code/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
-#View(d)
+setwd("/Users/manninge/Documents/GitHub/SAPAP3_reversal/")
+d <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
+("~/code/SAPAP3_reversal/")
+#d <- read_excel("~/code/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
+View(d)
 
 
 # read in genotype
-# g <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
-g <- read_excel("~/code/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
+g <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
+#g <- read_excel("~/code/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
 g$id <- g$`Physical Tag`
 g <- g[,2:3]
 
 
 # read in cfos cell counts
-# cfos <- read_csv("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
-cfos <- read_csv("~/code/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
+cfos <- read_csv("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
+#cfos <- read_csv("~/code/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
 names(cfos)[names(cfos)=="ID"] <- "id"
 names(cfos)[names(cfos)=="correct"] <- "tot_correct"
 names(cfos)[names(cfos)=="incorrrect"] <- "tot_incorrect"
@@ -49,7 +49,7 @@ names(cfos)[names(cfos)=="NAc S"] <- "NAccS"
 names(cfos)[names(cfos)=="NAc C"] <- "NAccC"
 
 
-#View(cfos)
+View(cfos)
 # check PCA on cfos
 
 just_rois <- cfos[,7:18]
@@ -108,6 +108,12 @@ PFC_rois <- cfos[,c(7:8,11:12)]
 PFC_cfos.pca = prcomp((PFC_rois),scale = TRUE, center = TRUE)
 PFC_cfos_pcas <- get_pca_ind(PFC_cfos.pca)
 cfos$valm8 <- PFC_cfos_pcas$coord[,1]
+
+# PCA for PrL-NACs CIRCUIT
+PrLNAcS_rois <- cfos[,c(5,12)]
+PrLNAcS_cfos.pca = prcomp((PrLNAcS_rois),scale = TRUE, center = TRUE)
+PrLNAcS_cfos_pcas <- get_pca_ind(PrLNAcS_cfos.pca)
+cfos$valm9 <- PrLNAcS_cfos_pcas$coord[,1]
 
 #Re-merge cell counts with other data
 
@@ -324,8 +330,10 @@ summary(lmg1 <- lm(cfos$grooming.time ~ cfos$genotype01))
 # both
 # calculate theta for both responses
 # AD: this was previously not working, and all the models were run on the old theta estimate, which was incorrect
+# LM 082717: yes I see that now the Genotype x type x time is highly significant
 theta.resp <- theta.ml(na.omit(c.all$response), mean(na.omit(c.all$response)), 972, limit = 50, eps = .Machine$double.eps^.25, trace = FALSE)
 summary(mrespg1 <- glm(response ~ 1 + t.num*type+ type*Genotype +  (1:id), family = negative.binomial(theta = theta.resp), data = bdf))
+# LM 082717 CAR::ANOVA output did not provide analysis related to genotype x type x time ineteraction?
 car::Anova(mrespg1)
 
 # plot over time by genotype
@@ -341,6 +349,7 @@ car::Anova(mrespg2)
 
 
 #DLS (alone) model
+#LM 082717: did not show DLS* time *type * genotype test, and reason why the model was set up to not test this?
 summary(mrespg3 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + DLS*t.num*Genotype + DLS*type*Genotype + DLS*type*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg3)
 
@@ -388,19 +397,21 @@ hist(cfos$NAccC)
 # looking at PFC ROIS
 
 #lOFC: no interactions found
+#LM 082717: using "DLS-style" model showed lOFC*genoytpe*type interaction
 summary(mrespg5 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + lOFC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
-lsmip(mrespg5, lOFC ~ type | Genotype , at = list(lOFC = c(400,800,1200)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
+lsmip(mrespg10, lOFC ~ type | Genotype , at = list(lOFC = c(400,800,1200)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
 car::Anova(mrespg5)
 hist(cfos$lOFC)
 
 #PrL influences response rate in KO mice, not WT mice. Low PrL actiivty associated with more perseverative behaviour, high PrL associated with better extinction
 #IL-NAcS typically mediates extinction
 ## AD: you cannot really interpret this model because it aggregates over all mice
+# LM 082717: yep was just mucking around with lm, can't remember exactly why....
 lm_PrL <- lm(response ~ PrL*t.num*type*Genotype, data=bdfc); summary(lm_PrL)
 lm <- lm(response ~t.num*type*Genotype, data=bdfc); summary(lm)
 anova(lm_PrL, lm)
 
-
+#LM 082717 again, using DLS-style model find  type x gene x PrL and type x time X PrL interactions
 summary(mrespg6 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + PrL*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg6)
 
@@ -412,6 +423,7 @@ lsmip(mrespg6, PrL ~ type | Genotype , at = list(PrL = c(200,400,600)), ylab = "
 summary(mrespg7 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + IL*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 
 #mOFC: Trend for genotype * mOFC * response time or type interactions: pattern (response time) looks like NAcS
+# LM 082717: again using similar model structure to DLS I found gene x type x mOFC interaction
 summary(mrespg8 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + mOFC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg8)
 # AD: careful, this is a NS interaction
@@ -465,6 +477,10 @@ summary(mrespg15 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + 
 summary(mrespg17 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val7*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg17)
 
+#PrL-NAcS circuit 
+summary(mrespg17 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + valm9*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+car::Anova(mrespg17)
+
 #stuff for deciding how to graph interactions
 hist(just_rois$M1)
 hist(just_rois$NAccS)
@@ -476,9 +492,9 @@ mean(cfos$NAccS)
 mean(cfos$val3)
 
 #checking regions quickly
-summary(mrespg10 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + CMS*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+summary(mrespg10 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + DLS*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+summary(mrespg10 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + valm9*t.num*Genotype + valm9*type*Genotype + valm9*type*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg10)
 lsmip(mrespg10, M1 ~ type | Genotype , at = list(grooming.time = c(100,500,1000)), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
-
 
 # conclusion: strong effects of cfos, weak effect of genotype, + interactions
