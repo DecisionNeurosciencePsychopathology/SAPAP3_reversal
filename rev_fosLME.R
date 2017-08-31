@@ -24,23 +24,23 @@ library(lattice)
 library(fastICA)
 library(plotly)
 # read in the data
-setwd("/Users/manninge/Documents/GitHub/SAPAP3_reversal/")
-d <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
+# setwd("/Users/manninge/Documents/GitHub/SAPAP3_reversal/")
+# d <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
 ("~/code/SAPAP3_reversal/")
-#d <- read_excel("~/code/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
+d <- read_excel("~/code/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
 View(d)
 
 
 # read in genotype
-g <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
-#g <- read_excel("~/code/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
+# g <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
+g <- read_excel("~/code/SAPAP3_reversal/Reversal cFos cohort blind.xlsx")
 g$id <- g$`Physical Tag`
 g <- g[,2:3]
 
 
 # read in cfos cell counts
-cfos <- read_csv("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
-#cfos <- read_csv("~/code/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
+# cfos <- read_csv("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
+cfos <- read_csv("~/code/SAPAP3_reversal/SAPAP3 reversal cFos density_Final mice.csv")
 names(cfos)[names(cfos)=="ID"] <- "id"
 names(cfos)[names(cfos)=="correct"] <- "tot_correct"
 names(cfos)[names(cfos)=="incorrrect"] <- "tot_incorrect"
@@ -207,12 +207,18 @@ describe(d$corr)
 describe(d$inc)
 end <- 18000
 start <- 0
-binsize <- 1000
-bins <- seq(start,end,binsize)
+# binsize <- 1000
+# try smaller bins:
+binsize <- 200
+
+
 
 c <- data.frame()
 for (id in ids)
-{t=cut(d$corr[d$id==id],c(bins), labels = FALSE)
+## Lizzie, here you can insert the if condition that sets a different end for some ids, or just set end to equal the time of last response
+  {end <- max(d$inc[d$id==id])
+  bins <- seq(start,end,binsize)
+  t=cut(d$corr[d$id==id],c(bins), labels = FALSE)
 b <- table( factor(t, levels = 1:length(bins)-1))
 b <- as.data.frame(b)
 b$id <- id
@@ -237,10 +243,10 @@ hist(c$inc)
 hist(c$corr)
 length(c$inc)
 
-ggplot(aes(x=t.num, y=corr),data = c) + stat_smooth(size=2, alpha=0.2, method="gam", formula = y ~ s(x), size = 1) + theme_bw(base_size=20) + xlab("Time, 100s bins") + ylab("Correct responses") +
+ggplot(aes(x=t.num, y=corr),data = c) + stat_smooth(size=2, alpha=0.2, method="gam", formula = y ~ s(x), size = 1) + theme_bw(base_size=20) + xlab("Time, 200s bins") + ylab("Correct responses") +
   stat_smooth(data=c, aes(x=t.num, y=corr), size=0.4, alpha=0.1, se=FALSE, method="loess")
 
-ggplot( aes(x=t.num, y=inc),data = c) + stat_smooth(size=2, alpha=0.2, method="gam", formula = y ~ s(x), size = 1) + theme_bw(base_size=20) + xlab("Time, 100s bins") + ylab("Incorrect responses") +
+ggplot( aes(x=t.num, y=inc),data = c) + stat_smooth(size=2, alpha=0.2, method="gam", formula = y ~ s(x), size = 1) + theme_bw(base_size=20) + xlab("Time, 200s bins") + ylab("Incorrect responses") +
   stat_smooth(data=c, aes(x=t.num, y=inc), size=0.4, alpha=0.1, se=FALSE, method="loess")
 
 # set up negative binomial models
@@ -266,16 +272,21 @@ names(c.all)[names(c.all)=="variable"] <- "type"
 
 View(c.all)
 
+# AD: we should not need manual censoring
+
 #remove bins with no data
-c.all[c(54,124:126,156:162,230:234,249:252,335:342,359:360,371:378,411:414,449:450,540,610:612,642:648,716:720,735:738,821:828,845:846,857:864,897:900,935,936),c('response')] <- "NA"
+# censored <- c(54:55,124:126,156:162,230:234,249:252,335:342,359:360,371:378,411:414,449:450,540:541,610:612,642:648,716:720,735:738,821:828,845:846,857:864,897:900,935:936)
+# censoredtemp <- censored*1000/binsize;
+# c.all[c(censoredtemp),c('response')] <- "NA"
+# c.all[c(54,124:126,156:162,230:234,249:252,335:342,359:360,371:378,411:414,449:450,540,610:612,642:648,716:720,735:738,821:828,845:846,857:864,897:900,935,936),c('response')] <- "NA"
 c.all$response <- as.numeric(c.all$response)
 
 pdf("Response curves gam.pdf", width=8, height=6)
-ggplot(aes(x=t.num, y=log(response + .1), color = type),data = c.all) + theme_bw(base_size=20) + xlab("Time, 100s bins") + ylab("Responses (log)") +
+ggplot(aes(x=t.num, y=log(response + .1), color = type),data = c.all) + theme_bw(base_size=20) + xlab("Time, 200s bins") + ylab("Responses (log)") +
   stat_smooth(data=c.all, aes(x=t.num, y=log(response + .1), color = type), size=2, alpha=0.2, se=TRUE, method="loess") + geom_count(position = "jitter")
 dev.off()
 ggplot(aes(x=t.num, y=response, color = type),data = c.all) + stat_smooth(size=2, alpha=0.2, method="gam", formula = y ~ s(x), size = 1) +
-  theme_bw(base_size=20) + xlab("Time, 100s bins") + ylab("Responses") +
+  theme_bw(base_size=20) + xlab("Time, 200s bins") + ylab("Responses") +
   geom_count(position = "jitter")
 
 # merge with genotype
@@ -284,11 +295,11 @@ hdf <- merge(c,g) # horizontal data frame
 #View(hdf)
 
 ggplot(aes(x=t.num, y=corr, color = Genotype),data = hdf) + stat_smooth(size=2, alpha=0.1, method="loess", size = 1) + theme_bw(base_size=20) +
-  xlab("Time, 100s bins") + ylab("Correct responses") +
+  xlab("Time, 200s bins") + ylab("Correct responses") +
   geom_count(position = "jitter")
 
 ggplot( aes(x=t.num, y=inc, color = Genotype),data = hdf) + stat_smooth(size=2, alpha=0.1, method="loess",  size = 1) + theme_bw(base_size=20) +
-  xlab("Time, 100s bins") + ylab("Incorrect responses") +
+  xlab("Time, 200s bins") + ylab("Incorrect responses") +
   geom_count(position = "jitter")
 
 
@@ -303,17 +314,17 @@ hdfc <- merge(hdf,cfos)
 bdfc <- merge(bdf,cfos)
 
 
-pdf("Log esponse curves by genotype gam.pdf", width=8, height=6)
-ggplot(aes(x=t.num, y=log(response + .1), color = type),data = bdf) + theme_bw(base_size=20) + xlab("Time, 100s bins") + ylab("Responses (log)") +
+pdf("Log response curves by genotype gam.pdf", width=8, height=6)
+ggplot(aes(x=t.num, y=log(response + .1), color = type),data = bdf) + theme_bw(base_size=20) + xlab("Time, 200s bins") + ylab("Responses (log)") +
   stat_smooth(data=bdf, aes(x=t.num, y=log(response + .1), color = type), size=2, alpha=0.2, se=TRUE, method="loess") + geom_count(position = "jitter") +
-  facet_grid(. ~ Genotype)
+  facet_grid(Genotype ~ .)
 dev.off()
 
-pdf("Linear esponse curves by genotype gam.pdf", width=8, height=6)
+pdf("Linear response curves by genotype gam.pdf", width=8, height=6)
 ggplot(aes(x=t.num, y=response, color = type),data = bdf) + stat_smooth(size=2, alpha=0.2, method="gam", formula = y ~ s(x), size = 1) +
-  theme_bw(base_size=20) + xlab("Time, 100s bins") + ylab("Responses") +
+  theme_bw(base_size=20) + xlab("Time, 200s bins") + ylab("Responses") +
   geom_count(position = "jitter") +
-  facet_grid(. ~ Genotype)
+  facet_grid(Genotype ~ .)
 dev.off()
 
 
@@ -325,26 +336,26 @@ summary(mincg1 <- glm(inc ~ t.num*Genotype +  (1:id), family = negative.binomial
 
 summary(lmc1 <- lm(cfos$tot_correct ~ cfos$genotype01))
 summary(lmi1 <- lm(cfos$tot_incorrect ~ cfos$genotype01))
-summary(lmg1 <- lm(cfos$grooming.time ~ cfos$genotype01))
+summary(lmg1 <- lm(log(cfos$grooming.time) ~ cfos$genotype01))
 
 # both
 # calculate theta for both responses
 # AD: this was previously not working, and all the models were run on the old theta estimate, which was incorrect
 # LM 082717: yes I see that now the Genotype x type x time is highly significant
 theta.resp <- theta.ml(na.omit(c.all$response), mean(na.omit(c.all$response)), 972, limit = 50, eps = .Machine$double.eps^.25, trace = FALSE)
-summary(mrespg1 <- glm(response ~ 1 + t.num*type+ type*Genotype +  (1:id), family = negative.binomial(theta = theta.resp), data = bdf))
+summary(mrespg1 <- glm(response ~ 1 + t.num*type + type*Genotype +  (1:id), family = negative.binomial(theta = theta.resp), data = bdf))
 # LM 082717 CAR::ANOVA output did not provide analysis related to genotype x type x time ineteraction?
 car::Anova(mrespg1)
 
 # plot over time by genotype
-#lsmip(mrespg1, Genotype ~ 1 + t.num | type, at = list(t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+#lsmip(mrespg1, Genotype ~ 1 + t.num | type, at = list(t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 ls.respg1 <- lsmeans(mrespg1,"type", by = "Genotype")
 plot(ls.respg1, type ~ response, horiz=F,ylab = "Response levels", xlab = "type")
 
 
 
 # grooming time -- I understand this to be the index of OCD-like behavior
-summary(mrespg2 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + grooming.time*t.num*type +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+summary(mrespg2 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + grooming.time*type + grooming.time*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg2)
 
 
@@ -352,17 +363,23 @@ car::Anova(mrespg2)
 #LM 082717: did not show DLS* time *type * genotype test, and reason why the model was set up to not test this?
 summary(mrespg3 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + DLS*t.num*Genotype + DLS*type*Genotype + DLS*type*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg3)
+summary(mrespg3full <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + DLS*t.num*Genotype*type +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+anova(mrespg3full,mrespg3, test = "LR")
 
 lsmip(mrespg3, DLS ~ type | Genotype, at = list(DLS = c(10,100,200)), ylab = "log(response rate)", xlab = "type ", type = "predicted" )
+lsmip(mrespg3, DLS ~ Genotype | type, at = list(DLS = c(10,100,200)), ylab = "log(response rate)", xlab = "type ", type = "predicted" )
+lsmip(mrespg3, DLS ~ t.num | Genotype, at = list(DLS = c(10,100,200),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "time ", type = "predicted" )
+
+
 
 # AD: DLS activity associated with learning of correct and has minimal impact on incorrect
-lsmip(mrespg3, DLS*type ~ t.num |  Genotype , at = list(DLS = c(10,100,200),t.num = c(1,9,18)), ylab = "log(response rate)", xlab = "type", type = "predicted" )
+lsmip(mrespg3, DLS*type ~ t.num |  Genotype , at = list(DLS = c(10,100,200),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "type", type = "predicted" )
 
 # stronger extinction at stronger activity, more perseverative at lower activity
 
 # AD: this is a NS interaction, do not plot
-# ls.respg3 <- lsmeans(mrespg3,"t.num", by = "DLS", at = list(DLS = c(10,100,200),t.num = c(1, 9, 18)))
-# plot(ls.respg3, type ~ response, horiz=F,ylab = "Response levels", xlab = "time, 100s bins")
+# ls.respg3 <- lsmeans(mrespg3,"t.num", by = "DLS", at = list(DLS = c(10,100,200),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])))
+# plot(ls.respg3, type ~ response, horiz=F,ylab = "Response levels", xlab = "time, 200s bins")
 
 # better reversal at higher DLS cfos levels
 ls.respg3a <- lsmeans(mrespg3,"type", by = "DLS", at = list(DLS = c(10,100,200)))
@@ -371,21 +388,29 @@ plot(ls.respg3a, type ~ response, horiz=F,ylab = "Response levels", xlab = "Resp
 
 # AD: this a NS interaction, do not plot
 # stronger extinction in WT as a Fx(DLS) than in KO
-# lsmip(mrespg3, DLS ~ t.num | Genotype, at = list(DLS = c(10,100,200),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+# lsmip(mrespg3, DLS ~ t.num | Genotype, at = list(DLS = c(10,100,200),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 
 
 #NAccS
 summary(mrespg4 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + NAccS*t.num*type*Genotype + (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg4)
 # AD: please see this 4-way plot.  Even though the 4-way interaction is NS, it helps you better understand the data
-lsmip(mrespg4, NAccS*type ~ t.num | Genotype , at = list(NAccS = c(50,150,250),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg4, NAccS*type ~ t.num | Genotype , at = list(NAccS = c(50,150,250),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg4, NAccS ~ type | Genotype , at = list(NAccS = c(50,150,250)), ylab = "log(response rate)", xlab = "response type ", type = "predicted" )
+lsmip(mrespg4, NAccS ~ Genotype | type , at = list(NAccS = c(50,150,250)), ylab = "log(response rate)", xlab = "response type ", type = "predicted" )
+
+
+summary(mrespg4_restr <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + NAccS*t.num*type + NAccS*t.num*Genotype + NAccS*type*Genotype + (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+car::Anova(mrespg4_restr)
+
 
 summary(mrespg4c <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + NAccC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg4c)
 lsmip(mrespg4c, NAccC ~ Genotype , at = list(NAccC = c(50,150,300)), ylab = "log(response rate)", xlab = "Genotype ", type = "predicted")
-lsmip(mrespg4c, NAccC ~ t.num | Genotype , at = list(NAccC = c(50,150,300),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg4c, NAccC ~ t.num | Genotype , at = list(NAccC = c(50,150,300),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg4c, NAccC ~ type | Genotype , at = list(NAccC = c(50,150,300)), ylab = "log(response rate)", xlab = "response type ", type = "predicted" )
+lsmip(mrespg4c, NAccC ~ Genotype | type , at = list(NAccC = c(50,150,300)), ylab = "log(response rate)", xlab = "response type ", type = "predicted" )
+
 hist(cfos$NAccC)
 
 # summary(mrespg4a <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + NAccC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
@@ -400,6 +425,9 @@ hist(cfos$NAccC)
 #LM 082717: using "DLS-style" (see 5a) model showed lOFC*genoytpe*type interaction
 summary(mrespg5 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + lOFC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 lsmip(mrespg5, lOFC ~ type | Genotype , at = list(lOFC = c(400,800,1200)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
+lsmip(mrespg5, lOFC ~ Genotype | type , at = list(lOFC = c(400,800,1200)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
+
+
 car::Anova(mrespg5)
 summary(mrespg5a <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + lOFC*t.num*Genotype + lOFC*type*Genotype + lOFC*type*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg5a)
@@ -421,7 +449,7 @@ summary(mrespg6a <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + 
 car::Anova(mrespg6a)
 
 # AD: careful, this is qualified by higher-order interactions including type
-#lsmip(mrespg6, PrL ~ t.num | Genotype , at = list(PrL = c(200,400,600),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+#lsmip(mrespg6, PrL ~ t.num | Genotype , at = list(PrL = c(200,400,600),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg6, PrL ~ type | Genotype , at = list(PrL = c(200,400,600)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
 
 #IL: no interaction found
@@ -435,11 +463,11 @@ car::Anova(mrespg8)
 summary(mrespg8a <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + mOFC*t.num*Genotype + mOFC*type*Genotype + mOFC*type*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg8a)
 # AD: careful, this is a NS interaction
-# lsmip(mrespg8, mOFC ~ t.num | Genotype , at = list(mOFC = c(400,700,1000),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+# lsmip(mrespg8, mOFC ~ t.num | Genotype , at = list(mOFC = c(400,700,1000),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg8, mOFC ~ type | Genotype , at = list(mOFC = c(400,700,1000)), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
 
 # careful, this small interaction is qualified by higher-order interaction above
-lsmip(mrespg8, mOFC ~ Genotype , at = list(mOFC = c(400,700,1000)), ylab = "log(response rate)", xlab = "Genotype", type = "predicted" )
+lsmip(mrespg8, mOFC ~ Genotype | type , at = list(mOFC = c(400,700,1000)), ylab = "log(response rate)", xlab = "Genotype", type = "predicted" )
 
 
 
@@ -451,12 +479,12 @@ summary(mrespg9 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + M
 #Dorsal striatum (DLS/DMS/CMS): similar to DLS
 summary(mrespg11 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val1*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg11)
-lsmip(mrespg11, val1 ~ t.num | Genotype , at = list(val1 = c(-2,0,2),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg11, val1 ~ t.num | Genotype , at = list(val1 = c(-2,0,2),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg11, val1 ~ type | Genotype , at = list(val1 = c(-2,0,2)), ylab = "log(response rate)", xlab = "type", type = "predicted" )
-lsmip(mrespg11, val1 ~ t.num | type , at = list(val1 = c(-2,0,2),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg11, val1 ~ t.num | type , at = list(val1 = c(-2,0,2),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 
 #better reversal with DS Cfos
-ls.respg11a <- lsmeans(mrespg11,"type", by = "val1", at = list(val1 = c(-2,0,2)),t.num = c(1, 9, 18))
+ls.respg11a <- lsmeans(mrespg11,"type", by = "val1", at = list(val1 = c(-2,0,2)),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)]))
 plot(ls.respg11a, type ~ response, horiz=F,ylab = "Response levels", xlab = "Response type")
 plot(ls.respg11a, type ~ response | t.num , horiz=F,ylab = "Response levels", xlab = "Response type")
 #DCS
@@ -471,12 +499,12 @@ summary(mrespg12 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + 
 
 #Nucleus accumbens (NAcC/NAcS): Similar to NAcS
 summary(mrespg13 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val3*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
-lsmip(mrespg13, val3 ~ t.num | Genotype , at = list(val3 = c(-1.5,0,1.5),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg13, val3 ~ t.num | Genotype , at = list(val3 = c(-1.5,0,1.5),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 car::Anova(mrespg12)
 
 #mPFC (mOFC/PrL): Similar to NAcS (not similar to PrL if IL or IL/lOFC are added to PrL)
 summary(mrespg16 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + valm6*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
-lsmip(mrespg16, valm6 ~ t.num | Genotype , at = list(valm6 = c(-2,0,2),t.num = c(1, 9, 18)), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg16, valm6 ~ t.num | Genotype , at = list(valm6 = c(-2,0,2),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg16, valm6 ~ type | Genotype , at = list(valm6 = c(-2,0,2)), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
 
 #oFC (mOFC/lOFC): trend genotype x cfos interaction (no interaction with behaviour)
@@ -485,7 +513,7 @@ summary(mrespg15 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + 
 summary(mrespg17 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val7*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg17)
 
-#PrL-NAcS circuit 
+#PrL-NAcS circuit
 summary(mrespg17 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + valm9*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg17)
 
