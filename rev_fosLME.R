@@ -205,7 +205,7 @@ View(d)
 ids <- unique(d$id)
 describe(d$corr)
 describe(d$inc)
-end <- 18000
+# end <- 18000
 start <- 0
 # binsize <- 1000
 # try smaller bins:
@@ -216,7 +216,8 @@ binsize <- 200
 c <- data.frame()
 for (id in ids)
 ## Lizzie, here you can insert the if condition that sets a different end for some ids, or just set end to equal the time of last response
-  {end <- max(d$inc[d$id==id])
+  {end <- max(c(max(d$inc[d$id==id]),max(na.omit(d$corr[d$id==id]))))
+  # end <- 12000
   bins <- seq(start,end,binsize)
   t=cut(d$corr[d$id==id],c(bins), labels = FALSE)
 b <- table( factor(t, levels = 1:length(bins)-1))
@@ -368,7 +369,7 @@ anova(mrespg3full,mrespg3, test = "LR")
 
 lsmip(mrespg3, DLS ~ type | Genotype, at = list(DLS = c(10,100,200)), ylab = "log(response rate)", xlab = "type ", type = "predicted" )
 lsmip(mrespg3, DLS ~ Genotype | type, at = list(DLS = c(10,100,200)), ylab = "log(response rate)", xlab = "type ", type = "predicted" )
-lsmip(mrespg3, DLS ~ t.num | Genotype, at = list(DLS = c(10,100,200),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "time ", type = "predicted" )
+lsmip(mrespg3, DLS ~ t.num | type, at = list(DLS = c(10,100,200),t.num  = c(1,length(bins)/2, length(bins))), ylab = "log(response rate)", xlab = "time ", type = "predicted" )
 
 
 
@@ -395,7 +396,7 @@ plot(ls.respg3a, type ~ response, horiz=F,ylab = "Response levels", xlab = "Resp
 summary(mrespg4 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + NAccS*t.num*type*Genotype + (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg4)
 # AD: please see this 4-way plot.  Even though the 4-way interaction is NS, it helps you better understand the data
-lsmip(mrespg4, NAccS*type ~ t.num | Genotype , at = list(NAccS = c(50,150,250),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg4, NAccS*type ~ t.num | Genotype , at = list(NAccS = c(50,150,250),t.num = c(1,length(bins)/2, length(bins))), ylab = "log(response rate)", xlab = "Time ", type = "predicted" )
 lsmip(mrespg4, NAccS ~ type | Genotype , at = list(NAccS = c(50,150,250)), ylab = "log(response rate)", xlab = "response type ", type = "predicted" )
 lsmip(mrespg4, NAccS ~ Genotype | type , at = list(NAccS = c(50,150,250)), ylab = "log(response rate)", xlab = "response type ", type = "predicted" )
 
@@ -407,7 +408,7 @@ car::Anova(mrespg4_restr)
 summary(mrespg4c <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + NAccC*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg4c)
 lsmip(mrespg4c, NAccC ~ Genotype , at = list(NAccC = c(50,150,300)), ylab = "log(response rate)", xlab = "Genotype ", type = "predicted")
-lsmip(mrespg4c, NAccC ~ t.num | Genotype , at = list(NAccC = c(50,150,300),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg4c, NAccC ~ t.num | type , at = list(NAccC = c(50,150,300),t.num  = c(1,length(bins)/2, length(bins))), ylab = "log(response rate)", xlab = "Time ", type = "predicted" )
 lsmip(mrespg4c, NAccC ~ type | Genotype , at = list(NAccC = c(50,150,300)), ylab = "log(response rate)", xlab = "response type ", type = "predicted" )
 lsmip(mrespg4c, NAccC ~ Genotype | type , at = list(NAccC = c(50,150,300)), ylab = "log(response rate)", xlab = "response type ", type = "predicted" )
 
@@ -466,22 +467,21 @@ car::Anova(mrespg8a)
 # lsmip(mrespg8, mOFC ~ t.num | Genotype , at = list(mOFC = c(400,700,1000),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
 lsmip(mrespg8, mOFC ~ type | Genotype , at = list(mOFC = c(400,700,1000)), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
 
-# careful, this small interaction is qualified by higher-order interaction above
 lsmip(mrespg8, mOFC ~ Genotype | type , at = list(mOFC = c(400,700,1000)), ylab = "log(response rate)", xlab = "Genotype", type = "predicted" )
 
 
 
 #M2: no interaction found
-# AD: this could be your control region
+# AD: comes through if you cut the time at 12000 s
 summary(mrespg9 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + M2*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 
 #averaged region analyses
 #Dorsal striatum (DLS/DMS/CMS): similar to DLS
 summary(mrespg11 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val1*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg11)
-lsmip(mrespg11, val1 ~ t.num | Genotype , at = list(val1 = c(-2,0,2),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg11, val1 ~ t.num | Genotype , at = list(val1 = c(-2,0,2),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time", type = "predicted" )
 lsmip(mrespg11, val1 ~ type | Genotype , at = list(val1 = c(-2,0,2)), ylab = "log(response rate)", xlab = "type", type = "predicted" )
-lsmip(mrespg11, val1 ~ t.num | type , at = list(val1 = c(-2,0,2),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg11, val1 ~ t.num | type , at = list(val1 = c(-2,0,2),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time", type = "predicted" )
 
 #better reversal with DS Cfos
 ls.respg11a <- lsmeans(mrespg11,"type", by = "val1", at = list(val1 = c(-2,0,2)),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)]))
@@ -499,12 +499,12 @@ summary(mrespg12 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + 
 
 #Nucleus accumbens (NAcC/NAcS): Similar to NAcS
 summary(mrespg13 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + val3*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
-lsmip(mrespg13, val3 ~ t.num | Genotype , at = list(val3 = c(-1.5,0,1.5),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg13, val3 ~ t.num | Genotype , at = list(val3 = c(-1.5,0,1.5),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time", type = "predicted" )
 car::Anova(mrespg12)
 
 #mPFC (mOFC/PrL): Similar to NAcS (not similar to PrL if IL or IL/lOFC are added to PrL)
 summary(mrespg16 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + valm6*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
-lsmip(mrespg16, valm6 ~ t.num | Genotype , at = list(valm6 = c(-2,0,2),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
+lsmip(mrespg16, valm6 ~ t.num | Genotype , at = list(valm6 = c(-2,0,2),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time", type = "predicted" )
 lsmip(mrespg16, valm6 ~ type | Genotype , at = list(valm6 = c(-2,0,2)), ylab = "log(response rate)", xlab = "Type", type = "predicted" )
 
 #oFC (mOFC/lOFC): trend genotype x cfos interaction (no interaction with behaviour)
