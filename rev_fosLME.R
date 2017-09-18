@@ -23,6 +23,7 @@ library(MASS)
 library(lattice)
 library(fastICA)
 library(plotly)
+library(stargazer)
 # read in the data
 # setwd("/Users/manninge/Documents/GitHub/SAPAP3_reversal/")
 # d <- read_excel("/Users/manninge/Documents/GitHub/SAPAP3_reversal/SAPAP3 cFos cohort lever press timestamp reversal day 1.xlsx")
@@ -177,6 +178,7 @@ names(t_cfos)[names(t_cfos)=="value"] <- "cfos"
 names(t_cfos)[names(t_cfos)=="variable"] <- "region"
 
 summary(cm1 <- lm(cfos ~ region*genotype01, data = t_cfos))
+anova(cm1)
 
 pdf("cfos by region and genotype.pdf", width=12, height=6)
 boxplot(cfos ~ genotype01 + region, data = t_cfos, main = "cfos activity by SAPAP3 genotype (blue = WT, purple = KO) and region",
@@ -210,14 +212,15 @@ start <- 0
 # binsize <- 1000
 # try smaller bins:
 binsize <- 200
-
+maxbin <- 16800
 
 
 c <- data.frame()
 for (id in ids)
 ## Lizzie, here you can insert the if condition that sets a different end for some ids, or just set end to equal the time of last response
   {end <- max(c(max(d$inc[d$id==id]),max(na.omit(d$corr[d$id==id]))))
-  # end <- 12000
+  # make sure we are not removing idle time at the end of sessions for those 5-6 mice
+  if (end>maxbin) {end <- 18000}
   bins <- seq(start,end,binsize)
   t=cut(d$corr[d$id==id],c(bins), labels = FALSE)
 b <- table( factor(t, levels = 1:length(bins)-1))
@@ -371,8 +374,6 @@ lsmip(mrespg3, DLS ~ type | Genotype, at = list(DLS = c(10,100,200)), ylab = "lo
 lsmip(mrespg3, DLS ~ Genotype | type, at = list(DLS = c(10,100,200)), ylab = "log(response rate)", xlab = "type ", type = "predicted" )
 lsmip(mrespg3, DLS ~ t.num | type, at = list(DLS = c(10,100,200),t.num  = c(1,length(bins)/2, length(bins))), ylab = "log(response rate)", xlab = "time ", type = "predicted" )
 
-
-
 # AD: DLS activity associated with learning of correct and has minimal impact on incorrect
 lsmip(mrespg3, DLS*type ~ t.num |  Genotype , at = list(DLS = c(10,100,200),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "type", type = "predicted" )
 
@@ -433,6 +434,8 @@ car::Anova(mrespg5)
 summary(mrespg5a <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + lOFC*t.num*Genotype + lOFC*type*Genotype + lOFC*type*t.num +  (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
 car::Anova(mrespg5a)
 hist(cfos$lOFC)
+lsmip(mrespg5a, lOFC ~ Genotype | type , at = list(lOFC = c(400,800,1200)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
+
 
 #PrL influences response rate in KO mice, not WT mice. Low PrL actiivty associated with more perseverative behaviour, high PrL associated with better extinction
 #IL-NAcS typically mediates extinction
@@ -451,7 +454,21 @@ car::Anova(mrespg6a)
 
 # AD: careful, this is qualified by higher-order interactions including type
 #lsmip(mrespg6, PrL ~ t.num | Genotype , at = list(PrL = c(200,400,600),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "Time, s ", type = "predicted" )
-lsmip(mrespg6, PrL ~ type | Genotype , at = list(PrL = c(200,400,600)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
+lsmip(mrespg6a, PrL ~ type | Genotype , at = list(PrL = c(200,400,600)), ylab = "log(response rate)", xlab = "Type ", type = "predicted" )
+
+## save regression stats into a table
+# quick and dirty example, default is coefficient/SE
+stargazer(mrespg6a,type="html", out="PrL.htm")
+
+# pretty example: note the very low p cutoffs, you can do (0.05,0.01, 0.001) or so; Please double-check variable labels
+stargazer(mrespg6a,  type="html", digits = 2 ,single.row=TRUE,  star.cutoffs = c(0.05, 0.005, 0.0001), report = 'vtcs*',
+          dep.var.labels=c("Responses"), covariate.labels=c("Time","Type: correct/incorrect", "Genotype: WT vs. SAPAP3 KO",
+                                                            "ROI",   "Time*type", "Time*genotype", "Type*genotype",  "Time*ROI",
+                                                            "Genotype*ROI", "Type*ROI", "Time*genotype*ROI", "Type*genotype*ROI",
+                                                            "Time*type*ROI"), out="prl_pretty.htm")
+# it can also combine multiple models, but unfortunately not in the way you want
+stargazer(mrespg5a,mrespg6a, type="html", out="lOFC_PrL.htm")
+
 
 #IL: no interaction found
 summary(mrespg7 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + IL*t.num*type*Genotype +   (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
