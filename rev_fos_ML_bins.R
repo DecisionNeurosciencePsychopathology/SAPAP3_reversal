@@ -72,7 +72,7 @@ names(c.all)[names(c.all)=="value"] <- "response"
 names(c.all)[names(c.all)=="variable"] <- "type"
 
 nbfit <- suppressWarnings(fitdistr(c.all$response, "negative binomial"))
-# nbfit$estimate
+print(nbfit$estimate)
 # logLik(nbfit)
 # AIC(nbfit, k = 2)
 simulated <- rnegbin(nbfit$n,nbfit$estimate[1],nbfit$estimate[2])
