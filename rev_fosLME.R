@@ -211,7 +211,7 @@ describe(d$inc)
 start <- 0
 # binsize <- 1000
 # try smaller bins:
-binsize <- 200
+binsize <- 50
 maxbin <- 16800
 
 
@@ -275,6 +275,10 @@ names(c.all)[names(c.all)=="value"] <- "response"
 names(c.all)[names(c.all)=="variable"] <- "type"
 
 View(c.all)
+
+nbfit <- suppressWarnings(fitdistr(c.all$response, "negative binomial"))
+nbfit$estimate
+logLik(nbfit)
 
 # AD: we should not need manual censoring
 
