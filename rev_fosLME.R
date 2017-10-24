@@ -575,7 +575,7 @@ CLD = cld(leastsquare, alpha=0.05, Letters=letters,
           adjust='tukey')
 CLD$type <- recode_factor(CLD$type,corr="Correct",inc="Incorrect")
 pdf(file = "DLS plot pretty PRETTY.pdf", width = 10, height = 6)
-pd = position_dodge(0.8)    ### How much to jitter the points on the plot
+pd = position_dodge(15)    ### How much to jitter the points on the plot
 ggplot(CLD, aes( x = DLS, y = lsmean, color = Genotype, label = .group)) +
   facet_wrap( ~ type) +
   
