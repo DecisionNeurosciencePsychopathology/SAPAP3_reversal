@@ -381,6 +381,7 @@ lsmip(mrespg3, DLS ~ t.num | type, at = list(DLS = c(10,100,200),t.num  = c(1,le
 # AD: DLS activity associated with learning of correct and has minimal impact on incorrect
 lsmip(mrespg3, DLS*type ~ t.num |  Genotype , at = list(DLS = c(10,100,200),t.num = c(bins[2],bins[length(bins)]/2, bins[length(bins)])), ylab = "log(response rate)", xlab = "type", type = "predicted" )
 
+
 # stronger extinction at stronger activity, more perseverative at lower activity
 
 # AD: this is a NS interaction, do not plot
@@ -563,3 +564,50 @@ lsmip(mrespg10, CMS ~ type | Genotype , at = list(CMS = c(25,75,150)), ylab = "l
 
 
 # conclusion: strong effects of cfos, weak effect of genotype, + interactions
+
+# pretty graph
+library(multcompView)
+
+leastsquare = lsmeans(mrespg3, pairwise ~ DLS:Genotype:type, at = list(DLS = c(10,100,200)), adjust='tukey')
+library(dplyr)
+
+CLD = cld(leastsquare, alpha=0.05, Letters=letters,
+          adjust='tukey')
+CLD$type <- recode_factor(CLD$type,corr="Correct",inc="Incorrect")
+pdf(file = "DLS plot pretty PRETTY.pdf", width = 10, height = 6)
+pd = position_dodge(0.8)    ### How much to jitter the points on the plot
+ggplot(CLD, aes( x = DLS, y = lsmean, color = Genotype, label = .group)) +
+  facet_wrap( ~ type) +
+  
+  geom_point(shape  = 15,
+             size   = 4,
+             position = pd) +
+  scale_y_reverse() +
+  
+  geom_errorbar(
+    aes(ymin  =  asymp.LCL,
+        ymax  =  asymp.UCL),
+    width =  0.2,
+    size  =  0.7,
+    position = pd
+  ) +  theme_bw() +  theme(
+    axis.title   = element_text(face = "bold"),
+    axis.text    = element_text(face = "bold"),
+    plot.caption = element_text(hjust = 0)
+  ) +  ylab("Log-probability of response") + xlab("Dorsolateral striatum cfos") +
+  ggtitle ("Behavior in reversal phase by genotype, regional cfos level, and response type") +
+  labs( caption  = paste0(
+      "\n",
+      "Boxes indicate the LS mean.\n",
+      "Error bars indicate the 95% ",
+      "confidence interval of the LS mean, Sidak method for 8 estimates. \n",
+      "Means sharing a letter are ",
+      "not significantly different ",
+      "(Tukey-adjusted comparisons for 8 estimates)."),
+    hjust = 0.5 ) +
+  geom_text(nudge_x = c(20, 10, 20, 10, 10, 10,10, 10, 10, 10, 10, 10),
+              nudge_y = c(0,  0, 0,  0, 0 , 0,0,0, .05,  -.05, 0, 0), color   = "black") +
+  # nudge_y = 0, color   = "black") +
+  
+    scale_color_manual(values = c("blue", "red"))
+dev.off()
