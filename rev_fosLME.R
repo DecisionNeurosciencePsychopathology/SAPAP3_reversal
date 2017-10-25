@@ -582,8 +582,7 @@ ggplot(CLD, aes( x = DLS, y = lsmean, color = Genotype, label = .group)) +
   geom_point(shape  = 15,
              size   = 4,
              position = pd) +
-  scale_y_reverse() +
-  
+
   geom_errorbar(
     aes(ymin  =  asymp.LCL,
         ymax  =  asymp.UCL),
