@@ -599,10 +599,10 @@ ggplot(CLD, aes( x = DLS, y = lsmean, color = Genotype, label = .group)) +
       "\n",
       "Boxes indicate the LS mean.\n",
       "Error bars indicate the 95% ",
-      "confidence interval of the LS mean, Sidak method for 8 estimates. \n",
+      "confidence interval of the LS mean, Sidak method for 12 estimates. \n",
       "Means sharing a letter are ",
       "not significantly different ",
-      "(Tukey-adjusted comparisons for 8 estimates)."),
+      "(Tukey-adjusted comparisons for 12 estimates)."),
     hjust = 0.5 ) +
   geom_text(nudge_x = c(20, 10, 20, 10, 10, 10,10, 10, 10, 10, 10, 10),
               nudge_y = c(0,  0, 0,  0, 0 , 0,0,0, .05,  -.05, 0, 0), color   = "black") +
