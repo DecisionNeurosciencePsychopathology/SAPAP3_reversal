@@ -12,7 +12,7 @@ library(xtable)
 library(Hmisc)
 library(nnet)
 library(reshape2)
-library(ggbiplot)
+# library(ggbiplot)
 library(corrplot)
 library(lsmeans)
 library(factoextra)
@@ -610,3 +610,53 @@ ggplot(CLD, aes( x = DLS, y = lsmean, color = Genotype, label = .group)) +
   
     scale_color_manual(values = c("blue", "red"))
 dev.off()
+
+
+#GRAPH NAcS genotype x time
+summary(mrespg4 <- glm(response ~ t.num*type+ t.num*Genotype + type*Genotype + NAccS*t.num*type + NAccS*t.num*Genotype + NAccS*type*Genotype + (1:id), family = negative.binomial(theta = theta.resp), data = bdfc))
+car::Anova(mrespg4)
+leastsquare = lsmeans::lsmeans(mrespg4, pairwise ~ NAccS:Genotype:t.num, at = list(NAccS = c(50,150,250),t.num = c(1,225,449)), adjust='tukey')
+library(dplyr)
+
+CLD = cld(leastsquare, alpha=0.05, Letters=letters,
+          adjust='tukey')
+CLD$t.num <- as.factor(CLD$t.num)
+CLD$type <- recode_factor(CLD$t.num, `1` ="early",`225`="mid", `449`="late") #I tried without c() as well and that didn't work
+pdf(file = "NAcS plot pretty genotype x time.pdf", width = 10, height = 6)
+pd = position_dodge(35)    ### How much to jitter the points on the plot
+ggplot(CLD, aes( x = NAccS, y = lsmean, color = Genotype, label = .group)) + #what does label = group refer to?
+  facet_wrap( ~ type) +
+  
+  geom_point(shape  = 16,
+             size   = 4,
+             position = pd) +
+  
+  geom_errorbar(
+    aes(ymin  =  asymp.LCL,
+        ymax  =  asymp.UCL),
+    width =  0.2,
+    size  =  0.7,
+    position = pd
+  ) +  
+  theme_bw() +  theme(
+    axis.title   = element_text(face = "bold"),
+    axis.text    = element_text(face = "bold"),
+    plot.caption = element_text(hjust = 0)
+  ) +  ylab("Log-probability of response") + xlab("Nucleus Accumbens Shell cfos") +
+  ggtitle ("Behavior in reversal phase by genotype, regional cfos level, and time") +
+  labs( caption  = paste0(
+    "\n",
+    "Boxes indicate the LS mean.\n",
+    "Error bars indicate the 95% ",
+    "confidence interval of the LS mean, Sidak method for 12 estimates. \n",
+    "Means sharing a letter are ",
+    "not significantly different ",
+    "(Tukey-adjusted comparisons for 12 estimates)."),
+    hjust = 0.5 ) +
+  geom_text(nudge_x = c(20, 10, 20, 10, 10, 10,10, 10, 10, 10, 10, 10),
+            nudge_y = c(0,  0, 0,  0, 0 , 0,0,0, .05,  -.05, 0, 0), color   = "black") + 
+  #nudge_y = 0, color   = "magenta3") +
+  
+  scale_color_manual(values = c("magenta3","black"))
+dev.off()
+
