@@ -1,5 +1,5 @@
 #proc operant data:
-setwd('~/Box Sync/skinner/projects_analyses/Project SAPAP3/ca')
+setwd('~/Box/skinner/projects_analyses/Project SAPAP3/ca')
 library(R.matlab)
 binsize = .1 # start at .1 seconds
 if(!file.exists("operantData.rdata")){
@@ -74,9 +74,53 @@ all_sumdt<-lapply(1:dim(dx$operantData)[3],function(mx){
   ))
 })
 
+#Do the bins;
+allmice_bin<-lapply(all_sumdt,function(mx1){
+  mx1$timpointdf$endoftrial<-mx1$timpointdf$rewardRetrieval
+  mx1$timpointdf$endoftrial[is.na(mx1$timpointdf$endoftrial)]<-mx1$timpointdf$allRewardDelilvery[is.na(mx1$timpointdf$endoftrial)]
+  
+  iti_timepoint<-round(as.numeric(unlist(sapply(2:length(mx1$timpointdf$endoftrial),function(lx){seq(from=lag(mx1$timpointdf$endoftrial,1)[lx],to=mx1$timpointdf$StartTime[lx],by = binsize) 
+  }))),1)
+  
+  dfx<-rbind(
+  data.frame(type="Correct",value=unlist(mx1$timpointdf$allCorrectResponses),stringsAsFactors = F),
+  data.frame(type="Incorrect",value=unlist(mx1$timpointdf$allIncorrectResponses),stringsAsFactors = F),
+  data.frame(type="MagazineEntry",value=unlist(mx1$timpointdf$allMagazineEntry),stringsAsFactors = F),
+  data.frame(type="RewardDelivery",value=unlist(mx1$timpointdf$allRewardDelilvery),stringsAsFactors = F),
+  data.frame(type="RewardRetrieval",value=unlist(mx1$timpointdf$rewardRetrieval),stringsAsFactors = F)
+  )
+  dfx<-dfx[!is.na(dfx$value),]
+  
+  rdx<-data.frame(timepoint=seq(from=min(dfx$value),to=max(dfx$value),by=binsize),action=0,type=NA,magzineentry=0,rewardretrieval=0)
+  rtx<-do.call(rbind,lapply(c("Correct","Incorrect"),function(tx){
+    rdx$action[sapply(dfx$value[dfx$type %in% c(tx)],function(x){which.min(abs(x-rdx$timepoint))})]<-1
+    rdx$type[sapply(dfx$value[dfx$type %in% c(tx)],function(x){which.min(abs(x-rdx$timepoint))})]<-tx
+    rdx$magzineentry[sapply(dfx$value[dfx$type %in% c("MagazineEntry")],function(x){which.min(abs(x-rdx$timepoint))})]<-1
+    #rdx$rewardretrieval[sapply(dfx$value[dfx$type %in% c("RewardRetrieval")],function(x){which.min(abs(x-rdx$timepoint))})]<-1
+    rdx$type[is.na(rdx$type)]<-tx
+    return(rdx)
+  }))
+  rtx<-rtx[order(rtx$timepoint),]
+  
+  rtx$action[rtx$timepoint %in% iti_timepoint]<-NA
+  
+  rtx$magzineentry[rtx$type=="Incorrect"]<-NA
+  #rtx$rewardretrieval[rtx$type=="Incorrect"]<-NA #Do we need to do that? probably, if it's incorrect then obv no reward?
+  rtx$trial<-NA
+  rtx$rewardretrieval<-0 
+  for(ti in mx1$timpointdf$Trial){
+    rtx$trial[rtx$timepoint>=mx1$timpointdf$StartTime[ti]]<-ti
+    rtx$rewardretrieval[rtx$timepoint==mx1$timpointdf$rewardRetrieval[ti]]<-1
+  }
+  
+  rtx<-cbind(unique(mx1$timpointdf[c("name","mouseID","treatment")]),rtx)
+  return(rtx)
+})
+
 MiceOperantsData<-list(
   Entry_df = do.call(rbind,lapply(all_sumdt,function(ab){ab$entrydf})),
-  Timpoint_df = do.call(rbind,lapply(all_sumdt,function(ab){ab$timpointdf}))
+  Timpoint_df = do.call(rbind,lapply(all_sumdt,function(ab){ab$timpointdf})),
+  mice_bin_df = do.call(rbind,allmice_bin)
 )
 
-save(MiceOperantData,file = "MiceOperantsData.rdata")
+save(MiceOperantsData,file = "MiceOperantsData.rdata")
